@@ -8,7 +8,7 @@ import (
 
 type CommonConfiguration struct {
 	PodName   string `default:"tracking-gateway"`
-	QueueType string
+	QueueName string `default:"mqtt"`
 }
 
 type MQTTConfiguration struct {
