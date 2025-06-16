@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	MQTT = "mqtt"
+	MQTT  = "mqtt"
+	Kafka = "kafka"
 )
 
 type Repo interface {
