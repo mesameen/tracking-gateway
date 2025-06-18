@@ -12,12 +12,19 @@ type CommonConfiguration struct {
 }
 
 type MQTTConfiguration struct {
-	Broker string `default:"tcp://localhost:1883"`
-	Topic  string `default:"$share/tracking-gateway/devices/status"`
+	Broker        string `default:"tcp://localhost:1883"`
+	LocationTopic string `default:"$share/tracking-gateway/devices/status"`
+}
+
+type KafkaConfiguration struct {
+	Brokers       string `default:"localhost:9092"`
+	ConsumerGroup string `default:"tracking-gateway"`
+	LocationTopic string `default:"location-info"`
 }
 
 var CommonConfig CommonConfiguration
 var MQTTConfig MQTTConfiguration
+var KafkaConfig KafkaConfiguration
 
 func InitConfig() {
 	if err := envconfig.Process("", &CommonConfig); err != nil {
@@ -28,4 +35,9 @@ func InitConfig() {
 		log.Panicf("MQTTConfig failed. Error: %v", err)
 	}
 	log.Printf("MQTTConfig: %+v", MQTTConfig)
+
+	if err := envconfig.Process("KAFKA", &KafkaConfig); err != nil {
+		log.Panicf("KafkaConfig failed. Error: %v", err)
+	}
+	log.Printf("KafkaConfig: %+v", KafkaConfig)
 }

@@ -18,13 +18,6 @@ type ConsumeMessage struct {
 	msg mqtt.Message
 }
 
-func NewConsumer(ctx context.Context) (*Consumer, error) {
-	return &Consumer{
-		messageChan: make(chan ConsumeMessage, 100000),
-		messages:    make([]ConsumeMessage, 0),
-	}, nil
-}
-
 // MessageReciever recieves the messages from mqtt broker
 func (c *Consumer) MessageReciever(client mqtt.Client, msg mqtt.Message) {
 	// Publish the incoming messages from mqtt broker to messageChan
