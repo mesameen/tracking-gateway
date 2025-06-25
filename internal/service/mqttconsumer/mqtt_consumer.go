@@ -1,27 +1,43 @@
-package mqttprovider
+package mqttconsumer
 
 import (
 	"context"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/mesameen/tracking-gateway/internal/config"
 	"github.com/mesameen/tracking-gateway/internal/logger"
+	"github.com/mesameen/tracking-gateway/internal/mqttutil"
 )
 
 type Consumer struct {
 	lastInsertTime time.Time
-	messageChan    chan ConsumeMessage // to listen for the message recieved events
-	messages       []ConsumeMessage    // messages collecting to batch process
+	messageChan    chan MQTTConsumeMessage // to listen for the message recieved events
+	messages       []MQTTConsumeMessage    // messages collecting to batch process
+	provider       *mqttutil.Provider
 }
 
-type ConsumeMessage struct {
+type MQTTConsumeMessage struct {
 	msg mqtt.Message
+}
+
+func Init(ctx context.Context) (*Consumer, error) {
+	provider, err := mqttutil.Init(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// creating a consumer to handle the messages
+	return &Consumer{
+		messageChan: make(chan MQTTConsumeMessage, 100000),
+		messages:    make([]MQTTConsumeMessage, 0),
+		provider:    provider,
+	}, nil
 }
 
 // MessageReciever recieves the messages from mqtt broker
 func (c *Consumer) MessageReciever(client mqtt.Client, msg mqtt.Message) {
 	// Publish the incoming messages from mqtt broker to messageChan
-	c.messageChan <- ConsumeMessage{
+	c.messageChan <- MQTTConsumeMessage{
 		msg: msg,
 	}
 }
@@ -62,13 +78,29 @@ func (c *Consumer) InsertRecords(ctx context.Context) {
 	for _, msg := range c.messages {
 		msg.msg.Ack()
 	}
-	c.messages = make([]ConsumeMessage, 0)
+	c.messages = make([]MQTTConsumeMessage, 0)
 	c.lastInsertTime = time.Now()
 }
 
 func (c *Consumer) Close(ctx context.Context) error {
-	logger.Infof("Closing the consumer")
+	logger.Infof("Closing the mqtt consumer")
 	// closing the message chan
 	close(c.messageChan)
+	c.provider.Close(ctx)
+	return nil
+}
+
+func (c *Consumer) StartConsume(ctx context.Context) error {
+	// running message processor as go routine to listen the messages to process
+	go c.MessageProcessor(ctx)
+	// subscribing to the topic and passing the message reciever to consume messages
+	err := c.provider.Subscribe(ctx, config.MQTTConfig.LocationTopic, 1, c.MessageReciever)
+	if err != nil {
+		logger.Panicf("Failed to subscribe to the mqtt topic %s. Error: %v", config.MQTTConfig.LocationTopic, err)
+	}
+	// waiting till cancellation
+	<-ctx.Done()
+	// clearing of consumer
+	c.Close(ctx)
 	return nil
 }

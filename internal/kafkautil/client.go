@@ -1,4 +1,4 @@
-package kafkaprovider
+package kafkautil
 
 import (
 	"github.com/IBM/sarama"

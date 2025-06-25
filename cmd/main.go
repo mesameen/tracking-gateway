@@ -28,6 +28,5 @@ func main() {
 	if err != nil {
 		logger.Panicf("Failed to consume mqtt messages. Error: %v", err)
 	}
-	prov.Close(ctx)
 	logger.Infof("Shutting down tracking gateway Job .....")
 }

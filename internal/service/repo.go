@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"github.com/mesameen/tracking-gateway/internal/config"
-	"github.com/mesameen/tracking-gateway/internal/kafkaprovider"
-	"github.com/mesameen/tracking-gateway/internal/mqttprovider"
+	"github.com/mesameen/tracking-gateway/internal/service/mqttconsumer"
 )
 
 const (
@@ -22,9 +21,9 @@ type Repo interface {
 func NewService(ctx context.Context) (Repo, error) {
 	switch config.CommonConfig.QueueName {
 	case MQTT:
-		return mqttprovider.Init(ctx)
+		return mqttconsumer.Init(ctx)
 	case Kafka:
-		return kafkaprovider.Init(ctx)
+		return mqttconsumer.Init(ctx)
 	default:
 		return nil, fmt.Errorf("unsupported Queue: %s", config.CommonConfig.QueueName)
 	}

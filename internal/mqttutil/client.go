@@ -1,4 +1,4 @@
-package mqttprovider
+package mqttutil
 
 import (
 	"context"
