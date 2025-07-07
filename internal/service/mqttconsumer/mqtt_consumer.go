@@ -11,10 +11,10 @@ import (
 )
 
 type Consumer struct {
-	lastInsertTime time.Time
-	messageChan    chan MQTTConsumeMessage // to listen for the message recieved events
-	messages       []MQTTConsumeMessage    // messages collecting to batch process
-	provider       *mqttutil.Provider
+	lastProcessedTime time.Time
+	messageChan       chan MQTTConsumeMessage // to listen for the message recieved events
+	messages          []MQTTConsumeMessage    // messages collecting to batch process
+	provider          *mqttutil.Provider
 }
 
 type MQTTConsumeMessage struct {
@@ -44,7 +44,7 @@ func (c *Consumer) MessageReciever(client mqtt.Client, msg mqtt.Message) {
 
 // MessageProcessor processes the messages batch wise
 func (c *Consumer) MessageProcessor(ctx context.Context) {
-	c.lastInsertTime = time.Now()
+	c.lastProcessedTime = time.Now()
 	// to make the consumer wait till 50 milliseconds
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
@@ -56,30 +56,30 @@ func (c *Consumer) MessageProcessor(ctx context.Context) {
 		case <-ticker.C:
 			// for each interval checking any messages are presents in messages slice and then processes
 			if len(c.messages) > 0 {
-				c.InsertRecords(ctx)
+				c.ProcessRecords(ctx)
 			}
 		case msg := <-c.messageChan:
 			logger.Debugf("Message topic:%s, offset:%d", msg.msg.Topic(), msg.msg.MessageID())
 			// append incoming messages to a slice if the last insert time isn't the configured value proceed further
 			c.messages = append(c.messages, msg)
-			if time.Since(c.lastInsertTime) < 50 {
+			if time.Since(c.lastProcessedTime) < 50 {
 				continue
 			}
 			// last insetion is more than confgiured value proced further to process the records
-			c.InsertRecords(ctx)
+			c.ProcessRecords(ctx)
 		}
 	}
 }
 
 // InsertRecords parses the incoming messages and process it
-func (c *Consumer) InsertRecords(ctx context.Context) {
+func (c *Consumer) ProcessRecords(ctx context.Context) {
 	logger.Infof("total records are going to process %v", len(c.messages))
 	// giving the acknowledgements after processing
 	for _, msg := range c.messages {
 		msg.msg.Ack()
 	}
 	c.messages = make([]MQTTConsumeMessage, 0)
-	c.lastInsertTime = time.Now()
+	c.lastProcessedTime = time.Now()
 }
 
 func (c *Consumer) Close(ctx context.Context) error {
@@ -95,6 +95,11 @@ func (c *Consumer) StartConsume(ctx context.Context) error {
 	go c.MessageProcessor(ctx)
 	// subscribing to the topic and passing the message reciever to consume messages
 	err := c.provider.Subscribe(ctx, config.MQTTConfig.LocationTopic, 1, c.MessageReciever)
+	if err != nil {
+		logger.Panicf("Failed to subscribe to the mqtt topic %s. Error: %v", config.MQTTConfig.LocationTopic, err)
+	}
+	// subscribing to the command responses topic
+	err = c.provider.Subscribe(ctx, config.MQTTConfig.CommandResponseTopic, 1, c.MessageReciever)
 	if err != nil {
 		logger.Panicf("Failed to subscribe to the mqtt topic %s. Error: %v", config.MQTTConfig.LocationTopic, err)
 	}

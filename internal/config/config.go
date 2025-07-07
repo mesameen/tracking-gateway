@@ -8,12 +8,14 @@ import (
 
 type CommonConfiguration struct {
 	PodName   string `default:"tracking-gateway"`
-	QueueName string `default:"mqtt"`
+	QueueName string `default:"kafka"`
 }
 
 type MQTTConfiguration struct {
-	Broker        string `default:"tcp://localhost:1883"`
-	LocationTopic string `default:"$share/tracking-gateway/devices/status"`
+	Broker               string `default:"tcp://localhost:1883"`
+	LocationTopic        string `default:"$share/tracking-gateway/devices/location"`          // any consumer can process the location data
+	CommandsTopic        string `default:"$share/tracking-gateway/devices/commands"`          // device_id is attached to seperate the device specific command
+	CommandResponseTopic string `default:"$share/tracking-gateway/devices/commands/response"` // any consumer can process the responses
 }
 
 type KafkaConfiguration struct {

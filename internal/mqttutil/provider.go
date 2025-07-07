@@ -4,7 +4,6 @@ import (
 	"context"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/mesameen/tracking-gateway/internal/config"
 	"github.com/mesameen/tracking-gateway/internal/logger"
 )
 
@@ -28,7 +27,7 @@ func (m *Provider) Subscribe(ctx context.Context, topic string, qos byte, handle
 		logger.Errorf("Failed to connect mqtt broker. Error: %v", token.Error())
 		return token.Error()
 	}
-	logger.Infof("Subscribed to the topic %v successfully", config.MQTTConfig.LocationTopic)
+	logger.Infof("Subscribed to the topic %v successfully", topic)
 	return nil
 }
 
