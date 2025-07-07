@@ -57,7 +57,7 @@ func (c *Consumer) Setup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error {
-	logger.Infof("Cleaning up kafka consumer")
+	logger.Infof("Cleaning up kafka consumer group")
 	return nil
 }
 
