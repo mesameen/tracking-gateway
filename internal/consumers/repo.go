@@ -1,12 +1,12 @@
-package service
+package consumers
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/mesameen/tracking-gateway/internal/config"
-	"github.com/mesameen/tracking-gateway/internal/service/kafkaconsumer"
-	"github.com/mesameen/tracking-gateway/internal/service/mqttconsumer"
+	"github.com/mesameen/tracking-gateway/internal/consumers/kafkaconsumer"
+	"github.com/mesameen/tracking-gateway/internal/consumers/mqttconsumer"
 )
 
 const (
@@ -20,7 +20,7 @@ type Repo interface {
 	Close(ctx context.Context) error
 }
 
-func NewService(ctx context.Context) (Repo, error) {
+func NewConsumer(ctx context.Context) (Repo, error) {
 	switch config.CommonConfig.QueueName {
 	case MQTT:
 		return mqttconsumer.Init(ctx)
