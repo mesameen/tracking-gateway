@@ -65,7 +65,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 	for {
 		select {
 		case msg := <-claim.Messages():
-			logger.Infof("Message recieved: %v", string(msg.Value))
+			logger.Infof("%v recieved message: %v", msg.Topic, string(msg.Value))
 			// pushing to buffered channel to allow the consumer reads asynchronously and process the records batch wise
 			c.messageChan <- ConsumeMessage{
 				msg:     msg,

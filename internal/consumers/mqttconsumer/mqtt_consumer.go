@@ -2,6 +2,7 @@ package mqttconsumer
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -36,6 +37,7 @@ func Init(ctx context.Context) (*Consumer, error) {
 
 // MessageReciever recieves the messages from mqtt broker
 func (c *Consumer) MessageReciever(client mqtt.Client, msg mqtt.Message) {
+	logger.Infof("Message recieved: %v", string(msg.Payload()))
 	// Publish the incoming messages from mqtt broker to messageChan
 	c.messageChan <- MQTTConsumeMessage{
 		msg: msg,
@@ -93,15 +95,18 @@ func (c *Consumer) Close(ctx context.Context) error {
 func (c *Consumer) StartConsume(ctx context.Context) error {
 	// running message processor as go routine to listen the messages to process
 	go c.MessageProcessor(ctx)
+	// $share/<groupname>/
+	locationTopic := fmt.Sprintf("$share/tracking-gateway/%s", config.MQTTConfig.LocationTopic)
 	// subscribing to the topic and passing the message reciever to consume messages
-	err := c.provider.Subscribe(ctx, config.MQTTConfig.LocationTopic, 1, c.MessageReciever)
+	err := c.provider.Subscribe(ctx, locationTopic, 1, c.MessageReciever)
 	if err != nil {
-		logger.Panicf("Failed to subscribe to the mqtt topic %s. Error: %v", config.MQTTConfig.LocationTopic, err)
+		logger.Panicf("Failed to subscribe to the mqtt topic %s. Error: %v", locationTopic, err)
 	}
+	commandsTopic := fmt.Sprintf("$share/tracking-gateway/%s", config.MQTTConfig.CommandResponseTopic)
 	// subscribing to the command responses topic
-	err = c.provider.Subscribe(ctx, config.MQTTConfig.CommandResponseTopic, 1, c.MessageReciever)
+	err = c.provider.Subscribe(ctx, commandsTopic, 1, c.MessageReciever)
 	if err != nil {
-		logger.Panicf("Failed to subscribe to the mqtt topic %s. Error: %v", config.MQTTConfig.LocationTopic, err)
+		logger.Panicf("Failed to subscribe to the mqtt topic %s. Error: %v", commandsTopic, err)
 	}
 	// waiting till cancellation
 	<-ctx.Done()
